@@ -1,0 +1,34 @@
+{
+  "name": "Clean workflow",
+  "nodes": [
+    {
+      "parameters": { "rule": { "interval": [{ "field": "hours", "value": 1 }] } },
+      "id": "a1", "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger", "typeVersion": 1.2,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://api.example.com/data",
+        "options": { "timeout": 10000 }
+      },
+      "id": "b2", "name": "Fetch data",
+      "type": "n8n-nodes-base.httpRequest", "typeVersion": 4.2,
+      "position": [460, 300],
+      "onError": "continueErrorOutput",
+      "retryOnFail": true, "maxTries": 3, "waitBetweenTries": 1000
+    },
+    {
+      "parameters": { "jsCode": "return items;" },
+      "id": "c3", "name": "Process",
+      "type": "n8n-nodes-base.code", "typeVersion": 2,
+      "position": [680, 300],
+      "onError": "stopWorkflow"
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": { "main": [[{ "node": "Fetch data", "type": "main", "index": 0 }]] },
+    "Fetch data": { "main": [[{ "node": "Process", "type": "main", "index": 0 }]] }
+  },
+  "active": true
+}
