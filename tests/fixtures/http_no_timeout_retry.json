@@ -1,0 +1,20 @@
+{
+  "name": "HTTP sloppy",
+  "nodes": [
+    {
+      "parameters": {}, "id": "a1", "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger", "typeVersion": 1.2,
+      "position": [240, 300]
+    },
+    {
+      "parameters": { "url": "https://slow.example.com/hook" },
+      "id": "b2", "name": "Call webhook",
+      "type": "n8n-nodes-base.httpRequest", "typeVersion": 4.2,
+      "position": [460, 300],
+      "onError": "continueErrorOutput"
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": { "main": [[{ "node": "Call webhook", "type": "main", "index": 0 }]] }
+  }
+}
