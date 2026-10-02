@@ -1,0 +1,28 @@
+{
+  "name": "Disabled leftover",
+  "nodes": [
+    {
+      "parameters": {}, "id": "a1", "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger", "typeVersion": 1.2,
+      "position": [240, 300]
+    },
+    {
+      "parameters": { "jsCode": "return [];" },
+      "id": "b2", "name": "Old transform",
+      "type": "n8n-nodes-base.code", "typeVersion": 2,
+      "position": [460, 500],
+      "disabled": true,
+      "onError": "stopWorkflow"
+    },
+    {
+      "parameters": { "jsCode": "return items;" },
+      "id": "c3", "name": "Transform",
+      "type": "n8n-nodes-base.code", "typeVersion": 2,
+      "position": [460, 300],
+      "onError": "stopWorkflow"
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": { "main": [[{ "node": "Transform", "type": "main", "index": 0 }]] }
+  }
+}
