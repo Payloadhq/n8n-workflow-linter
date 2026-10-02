@@ -1,0 +1,26 @@
+{
+  "name": "No error handling",
+  "nodes": [
+    {
+      "parameters": {}, "id": "a1", "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger", "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": { "jsCode": "return items;" },
+      "id": "b2", "name": "Transform",
+      "type": "n8n-nodes-base.code", "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": { "resource": "contact", "operation": "create" },
+      "id": "c3", "name": "Create contact",
+      "type": "n8n-nodes-base.hubspot", "typeVersion": 1,
+      "position": [680, 300]
+    }
+  ],
+  "connections": {
+    "Manual Trigger": { "main": [[{ "node": "Transform", "type": "main", "index": 0 }]] },
+    "Transform": { "main": [[{ "node": "Create contact", "type": "main", "index": 0 }]] }
+  }
+}
