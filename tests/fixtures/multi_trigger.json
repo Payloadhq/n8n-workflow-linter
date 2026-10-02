@@ -1,0 +1,25 @@
+{
+  "name": "Multi trigger",
+  "nodes": [
+    {
+      "parameters": {}, "id": "a1", "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger", "typeVersion": 1.2,
+      "position": [240, 300]
+    },
+    {
+      "parameters": { "path": "hook" }, "id": "a2", "name": "Webhook",
+      "type": "n8n-nodes-base.webhook", "typeVersion": 2,
+      "position": [240, 500]
+    },
+    {
+      "parameters": { "jsCode": "return items;" },
+      "id": "b2", "name": "Transform",
+      "type": "n8n-nodes-base.code", "typeVersion": 2,
+      "position": [460, 300],
+      "onError": "stopWorkflow"
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": { "main": [[{ "node": "Transform", "type": "main", "index": 0 }]] }
+  }
+}
