@@ -81,3 +81,10 @@ see the **[n8n Production AI Agent Reliability Kit](https://payloadtools.gumroad
 ## License
 
 MIT — see [LICENSE](LICENSE). Copyright 2026 Payload.
+
+---
+
+**Payload** — small, sharp tools for developers.
+Developer portal: https://payloadhq.github.io/ ·
+All products: https://payloadtools.gumroad.com/ ·
+Contact: kylers.partners@gmail.com
