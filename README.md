@@ -1,9 +1,9 @@
-# n8n-workflow-linter
+# n8n-workflow-linter by Payload
 
-**Small software that earns its keep.** — a Payload free utility
+**Small software that earns its keep.** A free utility by Payload.
 
 A zero-dependency Python CLI that statically lints an exported n8n workflow
-JSON for production-readiness smells — the small misconfigurations that turn
+JSON for production-readiness smells - the small misconfigurations that turn
 into 3 a.m. pages.
 
 ## Install
@@ -53,7 +53,7 @@ ERROR [N8N004] node 'Authed call': hardcoded secret in parameters.headerParamete
 Notes on scope, stated plainly:
 
 - Secret detection is heuristic: it looks for secret-like parameter names
-  (`password`, `api_key`, `secret`, `token`, …) and credential-style
+  (`password`, `api_key`, `secret`, `token`, ...) and credential-style
   `{"name","value"}` pairs (e.g. an `Authorization` header) holding literal
   values. It is not a substitute for a secrets scanner.
 - "Trigger" means a node whose type ends in `Trigger`, plus the `Start` and
@@ -73,18 +73,18 @@ This is a static linter, not a reliability system. It doesn't execute your
 workflow, load-test it, simulate failure modes, add retries and circuit
 breakers, or give you production-ready workflow templates.
 
-For the full 10-workflow hardening system — failure alerting, timeout circuit
-breakers, retry policies, and production patterns for AI agent workflows —
+For the full 10-workflow hardening system - failure alerting, timeout circuit
+breakers, retry policies, and production patterns for AI agent workflows -
 see the **[n8n Production AI Agent Reliability Kit](https://payloadtools.gumroad.com/l/n8n-agent-reliability-kit)**
 ($99) by Payload.
 
 ## License
 
-MIT — see [LICENSE](LICENSE). Copyright 2026 Payload.
+MIT - see [LICENSE](LICENSE). Copyright 2026 Payload.
 
 ---
 
-**Payload** — small, sharp tools for developers.
+**Payload** - small, sharp tools for developers.
 Developer portal: https://payloadhq.github.io/ ·
 All products: https://payloadtools.gumroad.com/ ·
 Contact: kylers.partners@gmail.com
