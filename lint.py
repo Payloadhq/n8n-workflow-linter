@@ -96,6 +96,15 @@ def find_hardcoded_secrets(parameters) -> list[tuple[str, str]]:
             hits.append((path, value))
     return hits
 
+def filter_issues(issues: list[Issue], allowlist: list[str], denylist: list[str]) -> list[Issue]:
+    if not allowlist and not denylist:
+        return issues
+    elif allowlist:
+        return [ issue for issue in issues if issue.code in allowlist ]
+    elif denylist:
+        return [ issue for issue in issues if issue.code not in denylist ]
+    else:
+        return issues
 
 def lint_workflow(data) -> list[Issue]:
     issues: list[Issue] = []
@@ -207,6 +216,9 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("workflow", help="path to exported workflow JSON")
     ap.add_argument("--json", action="store_true",
                     help="emit machine-readable JSON instead of text")
+    filters = ap.add_argument_group('filters').add_mutually_exclusive_group(required=False)
+    filters.add_argument("--ignore", action='append', default=[], help="an issue codes to ignore, can be specified multiple times")
+    filters.add_argument("--only", action='append', default=[], help="an issue codes to report, can be specified multiple times")
     args = ap.parse_args(argv)
 
     try:
@@ -221,7 +233,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f"ERROR: cannot read {args.workflow}: {exc}", file=sys.stderr)
         return 1
 
-    issues = lint_workflow(data)
+    issues = filter_issues(lint_workflow(data), allowlist=args.only, denylist=args.ignore)
     errors = [i for i in issues if i.severity == "ERROR"]
     warns = [i for i in issues if i.severity == "WARN"]
 
