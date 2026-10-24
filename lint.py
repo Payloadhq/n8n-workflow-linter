@@ -134,7 +134,7 @@ def lint_workflow(data) -> list[Issue]:
                 and n.get("type") not in NON_EXECUTABLE_TYPES]
 
     # ---- workflow-level checks -------------------------------------------
-    for name in data.get("pinData", {}):
+    for name in data.get("pinData", None) or {}:
         issues.append(Issue("N8N009", "WARN", name,
                         'has pinned data',
                         "clear pinned data and export the workflow again from n8n"))

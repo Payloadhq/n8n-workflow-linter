@@ -1,0 +1,53 @@
+{
+  "name": "My workflow 71",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "40779a27-2099-4d96-b7bc-bf1dea8a5ca5",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        224,
+        0
+      ],
+      "id": "3d7fbd77-f3c8-4dfc-962c-0d95fc05a98c",
+      "name": "No Operation, do nothing"
+    }
+  ],
+  "pinData": null,
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "No Operation, do nothing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "b01daa8d-3dfc-438b-8788-4807262bff09",
+  "meta": {
+    "instanceId": "8eb606f42814df58f5deb29c446278633c72445cc862998e8fdafe4af0fc203e"
+  },
+  "nodeGroups": [],
+  "id": "d3czz3cb9XKCnucj",
+  "tags": []
+}
