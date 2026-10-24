@@ -22,6 +22,12 @@ python3 lint.py my-workflow.json
 
 # machine-readable output
 python3 lint.py my-workflow.json --json
+
+# only check for N8N002 and N8N003
+python3 lint.py --only N8N002 --only N8N003 my-workflow.json
+
+# do not check for N8N002
+python3 lint.py --ignore N8N002 my-workflow.json
 ```
 
 Exit codes: `0` = clean, `1` = errors found, `2` = warnings only.
