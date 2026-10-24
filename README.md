@@ -49,6 +49,7 @@ ERROR [N8N004] node 'Authed call': hardcoded secret in parameters.headerParamete
 | N8N006 | warn | Workflow has multiple trigger nodes |
 | N8N007 | warn | Disabled node left in the workflow |
 | N8N008 | warn | Node with no connections at all |
+| N8N009 | warn | Node with pinned data |
 
 Notes on scope, stated plainly:
 
@@ -65,7 +66,7 @@ Notes on scope, stated plainly:
 python3 tests/run_tests.py
 ```
 
-8 fixtures: one clean workflow plus one workflow per smell. All must pass.
+9 fixtures: one clean workflow plus one workflow per smell. All must pass.
 
 ## What this doesn't do
 

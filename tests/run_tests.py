@@ -23,6 +23,8 @@ CASES = [
     ("multi_trigger.json", 2, ["N8N006"]),
     ("disabled_nodes.json", 2, ["N8N007"]),
     ("unconnected.json", 2, ["N8N008"]),
+    ("pinned.json", 2, ["N8N001", "N8N009"]),
+    ("pinned-null.json", 2, ["N8N001"]),
 ]
 
 # codes that must NOT appear in the clean fixture

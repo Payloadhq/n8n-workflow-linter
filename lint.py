@@ -12,6 +12,7 @@ Rules:
   N8N006 WARN   workflow has multiple trigger nodes
   N8N007 WARN   disabled node left in the workflow
   N8N008 WARN   node with no connections at all
+  N8N009 WARN   pinned data in workflow
 
 Exit codes: 0 = clean, 1 = errors found, 2 = warnings only.
 
@@ -119,6 +120,7 @@ def lint_workflow(data) -> list[Issue]:
         return [Issue("N8N005", "ERROR", "(workflow)",
                        'missing "nodes" array',
                        "export the workflow again from n8n")]
+
     connections = data.get("connections") or {}
 
     # ---- connection graph ------------------------------------------------
@@ -141,6 +143,10 @@ def lint_workflow(data) -> list[Issue]:
                 and n.get("type") not in NON_EXECUTABLE_TYPES]
 
     # ---- workflow-level checks -------------------------------------------
+    for name in data.get("pinData", None) or {}:
+        issues.append(Issue("N8N009", "WARN", name,
+                        'has pinned data',
+                        "clear pinned data and export the workflow again from n8n"))
     if not triggers:
         issues.append(Issue(
             "N8N005", "ERROR", "(workflow)",
