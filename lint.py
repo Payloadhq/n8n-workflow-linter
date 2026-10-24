@@ -27,6 +27,7 @@ import argparse
 import json
 import re
 import sys
+from enum import Enum, auto
 from pathlib import Path
 
 SECRET_KEY_PATTERN = re.compile(
@@ -37,17 +38,32 @@ HTTP_REQUEST_TYPE = "n8n-nodes-base.httpRequest"
 NON_EXECUTABLE_TYPES = {"n8n-nodes-base.stickyNote"}
 
 
+class IssueSeverity(Enum):
+    WARN = auto()
+    ERROR = auto()
+
+class IssueCode(Enum):
+    N8N001 = (IssueSeverity.WARN,  'non-trigger node without explicit onError handling')
+    N8N002 = (IssueSeverity.WARN,  'HTTP Request node without a timeout')
+    N8N003 = (IssueSeverity.WARN,  'HTTP Request node without retryOnFail')
+    N8N004 = (IssueSeverity.ERROR, 'hardcoded credential/secret value in node parameters')
+    N8N005 = (IssueSeverity.ERROR, 'workflow has no trigger node')
+    N8N006 = (IssueSeverity.WARN,  'workflow has multiple trigger nodes')
+    N8N007 = (IssueSeverity.WARN,  'disabled node left in the workflow')
+    N8N008 = (IssueSeverity.WARN,  'node with no connections at all')
+    N8N009 = (IssueSeverity.WARN,  'has pinned data')
+
+
 class Issue:
-    def __init__(self, code: str, severity: str, node: str, message: str,
-                 hint: str):
+    def __init__(self, code: IssueCode, node: str|None = None, message: str|None = None, hint: str|None = None):
         self.code = code
-        self.severity = severity  # "ERROR" or "WARN"
-        self.node = node
-        self.message = message
+        self.severity = code.value[0]
+        self.node = node if node else '(workflow)'
+        self.message = message if message else code.value[1]
         self.hint = hint
 
     def __str__(self) -> str:
-        return (f"{self.severity:5} [{self.code}] node {self.node!r}: "
+        return (f"{self.severity.name:5} [{self.code.name}] node {self.node!r}: "
                 f"{self.message}\n         fix: {self.hint}")
 
 
@@ -97,6 +113,14 @@ def find_hardcoded_secrets(parameters) -> list[tuple[str, str]]:
             hits.append((path, value))
     return hits
 
+def invalid_filters(allowlist: list[str], denylist: list[str]) -> list[str]:
+    invalid = []
+    for issue in (allowlist + denylist):
+        if not issue in IssueCode.__members__:
+            invalid.append(issue)
+
+    return invalid
+
 def filter_issues(issues: list[Issue], allowlist: list[str], denylist: list[str]) -> list[Issue]:
     if not allowlist and not denylist:
         return issues
@@ -111,16 +135,15 @@ def lint_workflow(data) -> list[Issue]:
     issues: list[Issue] = []
 
     if not isinstance(data, dict):
-        return [Issue("N8N005", "ERROR", "(workflow)",
-                       "workflow root must be a JSON object",
-                       "export the workflow again from n8n")]
+        return [Issue(IssueCode.N8N005,
+                       message="workflow root must be a JSON object",
+                       hint="export the workflow again from n8n")]
 
     nodes = data.get("nodes")
     if not isinstance(nodes, list):
-        return [Issue("N8N005", "ERROR", "(workflow)",
-                       'missing "nodes" array',
-                       "export the workflow again from n8n")]
-
+        return [Issue(IssueCode.N8N005,
+                       message='missing "nodes" array',
+                       hint="export the workflow again from n8n")]
     connections = data.get("connections") or {}
 
     # ---- connection graph ------------------------------------------------
@@ -144,20 +167,18 @@ def lint_workflow(data) -> list[Issue]:
 
     # ---- workflow-level checks -------------------------------------------
     for name in data.get("pinData", None) or {}:
-        issues.append(Issue("N8N009", "WARN", name,
-                        'has pinned data',
-                        "clear pinned data and export the workflow again from n8n"))
+        issues.append(Issue(IssueCode.N8N009, name,
+                        hint="clear pinned data and export the workflow again from n8n"))
     if not triggers:
         issues.append(Issue(
-            "N8N005", "ERROR", "(workflow)",
-            "no trigger node: an active production workflow needs a trigger",
-            "add a Schedule, Webhook, or other trigger node as the entry point"))
+            IssueCode.N8N005,
+            message="no trigger node: an active production workflow needs a trigger",
+            hint="add a Schedule, Webhook, or other trigger node as the entry point"))
     elif len(triggers) > 1:
         names = ", ".join(n.get("name", "?") for n in triggers)
-        issues.append(Issue(
-            "N8N006", "WARN", "(workflow)",
-            f"multiple trigger nodes ({names})",
-            "keep one trigger per workflow unless fan-in is intentional; "
+        issues.append(Issue(IssueCode.N8N006,
+            message=f"multiple trigger nodes ({names})",
+            hint="keep one trigger per workflow unless fan-in is intentional; "
             "document why"))
 
     # ---- node-level checks ------------------------------------------------
@@ -172,22 +193,22 @@ def lint_workflow(data) -> list[Issue]:
 
         if node.get("disabled") is True:
             issues.append(Issue(
-                "N8N007", "WARN", name,
-                "node is disabled",
-                "remove it or re-enable it before relying on this workflow "
+                IssueCode.N8N007, node=name,
+                message="node is disabled",
+                hint="remove it or re-enable it before relying on this workflow "
                 "in production"))
 
         if name not in sources and name not in targets:
             issues.append(Issue(
-                "N8N008", "WARN", name,
-                "node has no connections",
-                "connect it into the flow or delete it if it is leftover"))
+                IssueCode.N8N008, node=name,
+                message="node has no connections",
+                hint="connect it into the flow or delete it if it is leftover"))
 
         if not trigger and not node.get("onError"):
             issues.append(Issue(
-                "N8N001", "WARN", name,
-                "no explicit onError handling (defaults to stopWorkflow)",
-                'set onError explicitly, e.g. "continueErrorOutput" with an '
+                IssueCode.N8N001, node=name,
+                message="no explicit onError handling (defaults to stopWorkflow)",
+                hint='set onError explicitly, e.g. "continueErrorOutput" with an '
                 "error branch, or confirm stop-on-error is intended"))
 
         if ntype == HTTP_REQUEST_TYPE:
@@ -195,22 +216,22 @@ def lint_workflow(data) -> list[Issue]:
             options = params.get("options") or {}
             if not isinstance(options, dict) or not options.get("timeout"):
                 issues.append(Issue(
-                    "N8N002", "WARN", name,
-                    "HTTP Request has no timeout configured",
-                    "set options.timeout (ms), e.g. 10000, so a hung "
+                    IssueCode.N8N002, node=name,
+                    message="HTTP Request has no timeout configured",
+                    hint="set options.timeout (ms), e.g. 10000, so a hung "
                     "endpoint cannot stall the workflow"))
             if node.get("retryOnFail") is not True:
                 issues.append(Issue(
-                    "N8N003", "WARN", name,
-                    "HTTP Request has retryOnFail disabled",
-                    "enable retryOnFail with maxTries for transient failures"))
+                    IssueCode.N8N003, node=name,
+                    message="HTTP Request has retryOnFail disabled",
+                    hint="enable retryOnFail with maxTries for transient failures"))
 
         for path, value in find_hardcoded_secrets(node.get("parameters")):
             masked = value[:4] + "..." if len(value) > 4 else "****"
             issues.append(Issue(
-                "N8N004", "ERROR", name,
-                f"hardcoded secret in parameters.{path} ({masked})",
-                "move the secret into n8n Credentials and reference it; "
+                IssueCode.N8N004, node=name,
+                message=f"hardcoded secret in parameters.{path} ({masked})",
+                hint="move the secret into n8n Credentials and reference it; "
                 "never commit literal secrets in workflow JSON"))
 
     return issues
@@ -239,9 +260,14 @@ def main(argv: list[str] | None = None) -> int:
         print(f"ERROR: cannot read {args.workflow}: {exc}", file=sys.stderr)
         return 1
 
+    invalid_filter_list = invalid_filters(allowlist = args.only, denylist=args.ignore)
+    if invalid_filter_list:
+        print(f"ERROR: passed invalid issue filters: {', '.join(invalid_filter_list)}", file=sys.stderr)
+        return 1
+
     issues = filter_issues(lint_workflow(data), allowlist=args.only, denylist=args.ignore)
-    errors = [i for i in issues if i.severity == "ERROR"]
-    warns = [i for i in issues if i.severity == "WARN"]
+    errors = [i for i in issues if i.severity == IssueSeverity.ERROR]
+    warns = [i for i in issues if i.severity == IssueSeverity.WARN]
 
     if args.json:
         print(json.dumps({
