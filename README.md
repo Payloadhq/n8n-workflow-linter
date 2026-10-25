@@ -66,7 +66,7 @@ Notes on scope, stated plainly:
 python3 tests/run_tests.py
 ```
 
-9 fixtures: one clean workflow plus one workflow per smell. All must pass.
+10 fixtures: one clean workflow plus one workflow per smell. All must pass.
 
 ## What this doesn't do
 
