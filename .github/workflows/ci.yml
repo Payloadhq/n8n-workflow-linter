@@ -16,7 +16,23 @@ jobs:
         - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
           with:
             persist-credentials: false
+
         - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
           with:
             python-version: ${{ matrix.python-version }}
-        - run: python tests/run_tests.py
+
+        - name: Run testsuite
+          run: python tests/run_tests.py
+
+        - name: Check for valid JSON output
+          run: ./lint.py --json tests/fixtures/pinned.json | jq
+
+        - name: Check if --only fails on unknown codes
+          run: |
+            ./lint.py tests/fixtures/pinned.json --only N8NC09 2>&1 | grep "ERROR: passed invalid issue filters: N8NC09"
+
+        - name: Check if --only filters
+          run: ./lint.py --only N8N009 tests/fixtures/pinned.json | grep -e 'N8N009' -e '0 error(s), 1 warning(s)'
+
+        - name: Check if --ignore filters
+          run: ./lint.py --ignore N8N009 tests/fixtures/pinned.json | grep -e 'N8N001' -e '0 error(s), 1 warning(s)'
