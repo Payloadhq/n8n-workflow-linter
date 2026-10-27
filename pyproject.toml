@@ -1,0 +1,13 @@
+[project]
+name = "n8n-workflow-linter"
+dynamic = ["version"]
+requires-python = ">= 3.10"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+keywords = ["n8n", "linter"]
+[project.urls]
+Repository = "https://github.com/Payloadhq/n8n-workflow-linter.git"
+
+[project.scripts]
+n8n-workflow-linter = "lint:main"
