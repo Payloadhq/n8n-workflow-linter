@@ -66,6 +66,9 @@ class Issue:
         return (f"{self.severity.name:5} [{self.code.name}] node {self.node!r}: "
                 f"{self.message}\n         fix: {self.hint}")
 
+    def to_dict(self) -> dict[str,str]:
+        return { attr: (value if not isinstance(value, Enum) else value.name) for attr, value in self.__dict__.items() }
+
 
 def is_trigger(node: dict) -> bool:
     ntype = str(node.get("type", ""))
@@ -125,9 +128,9 @@ def filter_issues(issues: list[Issue], allowlist: list[str], denylist: list[str]
     if not allowlist and not denylist:
         return issues
     elif allowlist:
-        return [ issue for issue in issues if issue.code in allowlist ]
+        return [ issue for issue in issues if issue.code.name in allowlist ]
     elif denylist:
-        return [ issue for issue in issues if issue.code not in denylist ]
+        return [ issue for issue in issues if issue.code.name not in denylist ]
     else:
         return issues
 
@@ -272,8 +275,8 @@ def main(argv: list[str] | None = None) -> int:
     if args.json:
         print(json.dumps({
             "file": args.workflow,
-            "errors": [vars(i) for i in errors],
-            "warnings": [vars(i) for i in warns],
+            "errors": [i.to_dict() for i in errors],
+            "warnings": [i.to_dict() for i in warns],
             "exit_code": 1 if errors else (2 if warns else 0),
         }, indent=2))
     else:
