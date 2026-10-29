@@ -55,19 +55,25 @@ class IssueCode(Enum):
 
 
 class Issue:
-    def __init__(self, code: IssueCode, node: str|None = None, message: str|None = None, hint: str|None = None):
+    def __init__(self, code: IssueCode, node: str|None = None, message: str|None = None, hint: str|None = None, resolved: bool|None = None):
         self.code = code
         self.severity = code.value[0]
         self.node = node if node else '(workflow)'
         self.message = message if message else code.value[1]
         self.hint = hint
+        self.resolved = resolved
 
     def __str__(self) -> str:
         return (f"{self.severity.name:5} [{self.code.name}] node {self.node!r}: "
-                f"{self.message}\n         fix: {self.hint}")
+                f"{self.message}\n         fix: {self.__fix_string()}")
 
     def to_dict(self) -> dict[str,str]:
         return { attr: (value if not isinstance(value, Enum) else value.name) for attr, value in self.__dict__.items() }
+
+    def __fix_string(self):
+        if self.resolved is None:
+            return self.hint
+        return 'done' if self.resolved else 'possible'
 
 
 def is_trigger(node: dict) -> bool:
@@ -78,6 +84,12 @@ def is_trigger(node: dict) -> bool:
 
 AUTH_HEADER_NAMES = ("authorization", "x-api-key", "apikey", "api-key")
 
+def _exit_code(errors: list[Issue], warnings: list[Issue]) -> int:
+    if [ error for error in errors if error.resolved != True]:
+        return 1
+    if [ warning for warning in warnings if warning.resolved != True]:
+        return 2
+    return 0
 
 def _is_literal(value) -> bool:
     return isinstance(value, str) and bool(value) and not value.startswith("=")
@@ -134,17 +146,17 @@ def filter_issues(issues: list[Issue], allowlist: list[str], denylist: list[str]
     else:
         return issues
 
-def lint_workflow(data) -> list[Issue]:
+def lint_workflow(data, fix: bool) -> tuple[dict,list[Issue]]:
     issues: list[Issue] = []
 
     if not isinstance(data, dict):
-        return [Issue(IssueCode.N8N005,
+        return {},[Issue(IssueCode.N8N005,
                        message="workflow root must be a JSON object",
                        hint="export the workflow again from n8n")]
 
     nodes = data.get("nodes")
     if not isinstance(nodes, list):
-        return [Issue(IssueCode.N8N005,
+        return {},[Issue(IssueCode.N8N005,
                        message='missing "nodes" array',
                        hint="export the workflow again from n8n")]
     connections = data.get("connections") or {}
@@ -169,9 +181,15 @@ def lint_workflow(data) -> list[Issue]:
                 and n.get("type") not in NON_EXECUTABLE_TYPES]
 
     # ---- workflow-level checks -------------------------------------------
-    for name in data.get("pinData", None) or {}:
-        issues.append(Issue(IssueCode.N8N009, name,
-                        hint="clear pinned data and export the workflow again from n8n"))
+    pinned = data.get("pinData")
+    if isinstance(pinned, dict) and pinned:
+        resolved = bool(fix)
+        for name in pinned:
+            issues.append(Issue(IssueCode.N8N009, name,
+                            hint="clear pinned data and export the workflow again from n8n",
+                            resolved=resolved))
+        if fix:
+            data = {key: value for key, value in data.items() if key != "pinData"}
     if not triggers:
         issues.append(Issue(
             IssueCode.N8N005,
@@ -237,15 +255,18 @@ def lint_workflow(data) -> list[Issue]:
                 hint="move the secret into n8n Credentials and reference it; "
                 "never commit literal secrets in workflow JSON"))
 
-    return issues
+    return data,issues
 
 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(
-        description="Lint an n8n workflow JSON for production-readiness smells.")
+        description="Lint an n8n workflow JSON for production-readiness smells.",
+        epilog="Exit codes: 0 = clean, 1 = errors found, 2 = warnings only.")
     ap.add_argument("workflow", help="path to exported workflow JSON")
     ap.add_argument("--json", action="store_true",
                     help="emit machine-readable JSON instead of text")
+    ap.add_argument("--fix", action="store_true",
+                    help="write a separate .fixed.json file for fixable issues (never overwrite the input)")
     filters = ap.add_argument_group('filters').add_mutually_exclusive_group(required=False)
     filters.add_argument("--ignore", action='append', default=[], help="an issue codes to ignore, can be specified multiple times")
     filters.add_argument("--only", action='append', default=[], help="an issue codes to report, can be specified multiple times")
@@ -268,7 +289,29 @@ def main(argv: list[str] | None = None) -> int:
         print(f"ERROR: passed invalid issue filters: {', '.join(invalid_filter_list)}", file=sys.stderr)
         return 1
 
-    issues = filter_issues(lint_workflow(data), allowlist=args.only, denylist=args.ignore)
+    # --fix never modifies the source file. The user reviews and applies
+    # the separate .fixed.json result if they want to keep the changes.
+    fix_pin = (args.fix and isinstance(data, dict)
+               and isinstance(data.get("nodes"), list)
+               and (not args.only or "N8N009" in args.only)
+               and "N8N009" not in args.ignore)
+    original_data = data
+    data,issues = lint_workflow(data, fix_pin)
+    if fix_pin and data != original_data:
+        source = Path(args.workflow)
+        target = source.with_name(f"{source.stem}.fixed{source.suffix}")
+        try:
+            with target.open("x", encoding="utf-8") as output:
+                json.dump(data, output, indent=2, ensure_ascii=False)
+                output.write("\n")
+        except FileExistsError:
+            print(f"ERROR: fixed output already exists; refusing to overwrite: {target}", file=sys.stderr)
+            return 1
+        except OSError as exc:
+            print(f"ERROR: cannot write fixed output {target}: {exc}", file=sys.stderr)
+            return 1
+        print(f"Fixed workflow written to {target}; original unchanged", file=sys.stderr)
+    issues = filter_issues(issues, allowlist=args.only, denylist=args.ignore)
     errors = [i for i in issues if i.severity == IssueSeverity.ERROR]
     warns = [i for i in issues if i.severity == IssueSeverity.WARN]
 
@@ -277,7 +320,7 @@ def main(argv: list[str] | None = None) -> int:
             "file": args.workflow,
             "errors": [i.to_dict() for i in errors],
             "warnings": [i.to_dict() for i in warns],
-            "exit_code": 1 if errors else (2 if warns else 0),
+            "exit_code": _exit_code(errors=errors, warnings=warns),
         }, indent=2))
     else:
         if not issues:
@@ -286,11 +329,7 @@ def main(argv: list[str] | None = None) -> int:
             print(issue)
         print(f"{len(errors)} error(s), {len(warns)} warning(s)")
 
-    if errors:
-        return 1
-    if warns:
-        return 2
-    return 0
+    return _exit_code(errors=errors, warnings=warns)
 
 
 if __name__ == "__main__":
