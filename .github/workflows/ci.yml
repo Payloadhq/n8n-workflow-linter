@@ -37,8 +37,5 @@ jobs:
         - name: Check if --ignore filters
           run: ./lint.py --ignore N8N009 tests/fixtures/pinned.json | grep -e 'N8N001' -e '0 error(s), 1 warning(s)'
 
-        - name: Check if --fix resolved the issues
-          run: |
-            cp ./tests/fixtures/pinned.json ./fix-check.json
-            ./lint.py --only N8N009 --fix fix-check.json
-            diff fix-check.json tests/fixtures/pinned-fixed.json
+        - name: Verify safe, non-destructive --fix behavior
+          run: python tests/check_autofix.py
