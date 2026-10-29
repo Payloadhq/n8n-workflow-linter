@@ -181,17 +181,15 @@ def lint_workflow(data, fix: bool) -> tuple[dict,list[Issue]]:
                 and n.get("type") not in NON_EXECUTABLE_TYPES]
 
     # ---- workflow-level checks -------------------------------------------
-    if "pinData" in data:
-        resolved = False
-        fixed_data = data.copy()
-        if fix:
-            del fixed_data['pinData']
-            resolved = True
-        for name in data.get("pinData", None) or {}:
+    pinned = data.get("pinData")
+    if isinstance(pinned, dict) and pinned:
+        resolved = bool(fix)
+        for name in pinned:
             issues.append(Issue(IssueCode.N8N009, name,
                             hint="clear pinned data and export the workflow again from n8n",
                             resolved=resolved))
-        data = fixed_data
+        if fix:
+            data = {key: value for key, value in data.items() if key != "pinData"}
     if not triggers:
         issues.append(Issue(
             IssueCode.N8N005,
@@ -268,7 +266,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--json", action="store_true",
                     help="emit machine-readable JSON instead of text")
     ap.add_argument("--fix", action="store_true",
-                    help="automatically resolve fixable issues")
+                    help="write a separate .fixed.json file for fixable issues (never overwrite the input)")
     filters = ap.add_argument_group('filters').add_mutually_exclusive_group(required=False)
     filters.add_argument("--ignore", action='append', default=[], help="an issue codes to ignore, can be specified multiple times")
     filters.add_argument("--only", action='append', default=[], help="an issue codes to report, can be specified multiple times")
@@ -291,10 +289,26 @@ def main(argv: list[str] | None = None) -> int:
         print(f"ERROR: passed invalid issue filters: {', '.join(invalid_filter_list)}", file=sys.stderr)
         return 1
 
-    data,issues = lint_workflow(data, args.fix)
-    if args.fix:
-        with open(args.workflow, "w") as f:
-            json.dump(data, f, indent=2)
+    # --fix never modifies the source file. The user reviews and applies
+    # the separate .fixed.json result if they want to keep the changes.
+    fix_pin = (args.fix and (not args.only or "N8N009" in args.only)
+               and "N8N009" not in args.ignore)
+    original_data = data
+    data,issues = lint_workflow(data, fix_pin)
+    if data != original_data:
+        source = Path(args.workflow)
+        target = source.with_name(f"{source.stem}.fixed{source.suffix}")
+        try:
+            with target.open("x", encoding="utf-8") as output:
+                json.dump(data, output, indent=2, ensure_ascii=False)
+                output.write("\n")
+        except FileExistsError:
+            print(f"ERROR: fixed output already exists; refusing to overwrite: {target}", file=sys.stderr)
+            return 1
+        except OSError as exc:
+            print(f"ERROR: cannot write fixed output {target}: {exc}", file=sys.stderr)
+            return 1
+        print(f"Fixed workflow written to {target}; original unchanged", file=sys.stderr)
     issues = filter_issues(issues, allowlist=args.only, denylist=args.ignore)
     errors = [i for i in issues if i.severity == IssueSeverity.ERROR]
     warns = [i for i in issues if i.severity == IssueSeverity.WARN]
