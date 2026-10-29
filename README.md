@@ -34,7 +34,12 @@ python3 lint.py --ignore N8N002 my-workflow.json
 python3 lint.py --fix my-workflow.json
 ```
 
-Exit codes: `0` = clean or selected issues fixed, `1` = errors found or a fixed-output conflict, `2` = warnings remaining.\n\n`--fix` currently removes populated `pinData` only when N8N009 is selected. It writes\na separate `<workflow>.fixed.json` next to the source; it never modifies the\noriginal or overwrites an existing fixed output. Review the generated file\nbefore importing it into n8n.
+Exit codes: `0` = clean or selected issues fixed, `1` = errors found or a fixed-output conflict, `2` = warnings remaining.
+
+`--fix` currently removes populated `pinData` only when N8N009 is selected. It writes
+a separate `<workflow>.fixed.json` next to the source; it never modifies the
+original or overwrites an existing fixed output. Review the generated file
+before importing it into n8n.
 
 Real output:
 

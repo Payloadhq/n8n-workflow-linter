@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "n8n-workflow-linter"
+version = "0.1.0"
+description = "Static production-readiness linter for exported n8n workflows"
+requires-python = ">=3.10"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+keywords = ["n8n", "linter"]
+
+[project.urls]
+Repository = "https://github.com/Payloadhq/n8n-workflow-linter.git"
+
+[project.scripts]
+n8n-workflow-linter = "lint:main"
+
+[tool.setuptools]
+py-modules = ["lint"]

@@ -39,3 +39,13 @@ jobs:
 
         - name: Verify safe, non-destructive --fix behavior
           run: python tests/check_autofix.py
+
+        - name: Build, validate and install pip distribution
+          run: |
+            python -m pip install --upgrade build twine
+            python -m build
+            python -m twine check --strict dist/*
+            python -m pip install dist/*.whl
+            python -c "from importlib.metadata import version; assert version('n8n-workflow-linter') != '0.0.0'"
+            n8n-workflow-linter --help
+            n8n-workflow-linter --json tests/fixtures/clean.json
