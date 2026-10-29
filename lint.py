@@ -295,7 +295,7 @@ def main(argv: list[str] | None = None) -> int:
                and "N8N009" not in args.ignore)
     original_data = data
     data,issues = lint_workflow(data, fix_pin)
-    if data != original_data:
+    if fix_pin and data != original_data:
         source = Path(args.workflow)
         target = source.with_name(f"{source.stem}.fixed{source.suffix}")
         try:
