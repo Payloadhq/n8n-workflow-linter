@@ -291,7 +291,9 @@ def main(argv: list[str] | None = None) -> int:
 
     # --fix never modifies the source file. The user reviews and applies
     # the separate .fixed.json result if they want to keep the changes.
-    fix_pin = (args.fix and (not args.only or "N8N009" in args.only)
+    fix_pin = (args.fix and isinstance(data, dict)
+               and isinstance(data.get("nodes"), list)
+               and (not args.only or "N8N009" in args.only)
                and "N8N009" not in args.ignore)
     original_data = data
     data,issues = lint_workflow(data, fix_pin)
