@@ -1,0 +1,94 @@
+name: Action self-test
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: ~
+
+permissions: {}
+
+jobs:
+  clean-passes:
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./
+        with:
+          paths: 'tests/fixtures/clean.json'
+
+  warnings-pass:
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./
+        with:
+          paths: 'tests/fixtures/http_no_timeout_retry.json'
+
+  error-fails:
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - id: lint
+        continue-on-error: true
+        uses: ./
+        with:
+          paths: 'tests/fixtures/hardcoded_secret.json'
+      - name: Assert the action failed
+        if: steps.lint.outcome != 'failure'
+        run: |
+          echo "Expected the action to fail on the error fixture but it did not."
+          exit 1
+
+  empty-passes:
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./
+        with:
+          paths: 'workflows/**/*.json'
+
+  multi-file-mixed-fails:
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - id: lint
+        continue-on-error: true
+        uses: ./
+        with:
+          paths: 'tests/fixtures/clean.json tests/fixtures/hardcoded_secret.json tests/fixtures/http_no_timeout_retry.json'
+      - name: Assert the action failed
+        if: steps.lint.outcome != 'failure'
+        run: |
+          echo "Expected the action to fail on the mixed fixture set but it did not."
+          exit 1
+
+  multi-file-clean-warnings-pass:
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./
+        with:
+          paths: 'tests/fixtures/clean.json tests/fixtures/http_no_timeout_retry.json'
