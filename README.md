@@ -110,3 +110,15 @@ Contact: kylers.partners@gmail.com
 **More from Payload** · [payloadhq.github.io](https://payloadhq.github.io/) · [all Payload repos](https://github.com/Payloadhq)
 
 Related: [n8n-reliability-free-samples](https://github.com/Payloadhq/n8n-reliability-free-samples) · [n8n-nodes-payload-flow](https://github.com/Payloadhq/n8n-nodes-payload-flow)
+
+## GitHub Action
+
+Run the linter in CI on every exported workflow in your repo:
+
+```yaml
+- uses: Payloadhq/n8n-workflow-linter@main
+  with:
+    paths: 'workflows/**/*.json'
+```
+
+Inputs: `paths` (space-separated glob patterns, default `workflows/**/*.json`) and `fail-on-error` (default `true`; warnings never fail the job). The action installs the linter from this repository and fails the job when any matched workflow has lint errors, so a workflow with missing error handling or an HTTP node without a timeout cannot merge unnoticed.
