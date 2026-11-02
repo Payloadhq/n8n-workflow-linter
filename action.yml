@@ -16,7 +16,7 @@ inputs:
 runs:
   using: 'composite'
   steps:
-    - uses: actions/setup-python@v5
+    - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
       with:
         python-version: '3.12'
     - name: Install n8n-workflow-linter
@@ -35,8 +35,8 @@ runs:
           for f in $pattern; do
             found=1
             echo "::group::Lint $f"
-            n8n-workflow-linter "$f"
-            rc=$?
+            rc=0
+            n8n-workflow-linter "$f" || rc=$?
             echo "::endgroup::"
             if [ "$rc" -eq 1 ]; then status=1; fi
           done
