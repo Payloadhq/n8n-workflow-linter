@@ -113,12 +113,14 @@ Related: [n8n-reliability-free-samples](https://github.com/Payloadhq/n8n-reliabi
 
 ## GitHub Action
 
-Run the linter in CI on every exported workflow in your repo:
+Run the linter in CI on every exported workflow in your repo. Pin to a release rather than a moving branch:
 
 ```yaml
-- uses: Payloadhq/n8n-workflow-linter@main
+- uses: Payloadhq/n8n-workflow-linter@v1.0.0
   with:
     paths: 'workflows/**/*.json'
 ```
 
-Inputs: `paths` (space-separated glob patterns, default `workflows/**/*.json`) and `fail-on-error` (default `true`; warnings never fail the job). The action installs the linter from this repository and fails the job when any matched workflow has lint errors, so a workflow with missing error handling or an HTTP node without a timeout cannot merge unnoticed.
+Inputs: `paths` (space-separated glob patterns, default `workflows/**/*.json`) and `fail-on-error` (default `true`).
+
+The action installs the linter from this repository and checks every matched file. Workflows with lint errors fail the job when `fail-on-error` is true, so a workflow with a hardcoded secret or no trigger cannot merge unnoticed. Warnings are printed in the job log but never fail the job on their own. If no files match, the action passes and says so.
