@@ -116,7 +116,7 @@ Related: [n8n-reliability-free-samples](https://github.com/Payloadhq/n8n-reliabi
 Run the linter in CI on every exported workflow in your repo. Pin to a release rather than a moving branch:
 
 ```yaml
-- uses: Payloadhq/n8n-workflow-linter@v1.0.0
+- uses: Payloadhq/n8n-workflow-linter@v1.1.0
   with:
     paths: 'workflows/**/*.json'
 ```
